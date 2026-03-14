@@ -1,4 +1,4 @@
-# Sentinel AI Architecture
+# Agentic AI Architecture
 
 Production architecture patterns for building **agentic AI systems** — multi-tool agent loops with streaming, retrieval-augmented generation, predictive intelligence, and real-time executive briefing.
 
@@ -87,17 +87,36 @@ Genericized code samples demonstrating each pattern:
 
 ---
 
-## Key Design Decisions
+## Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Fresh DB session per tool call** | Prevents "session poisoning" — one tool's failed query can't corrupt the ORM state for subsequent tools in the same agentic round |
-| **Budget awareness injection** | Prevents runaway tool loops. The agent is told remaining rounds/tokens after each tool call and nudged toward synthesis |
-| **Composite tools** | Two "super-tools" combine 4-5 individual calls into one, saving 3-4 agentic rounds for common deep-dive queries |
-| **USE WHEN / DO NOT USE annotations** | Adding explicit dispatch guidance in tool descriptions reduced tool mis-selection by ~40% |
-| **Heartbeats as SSE comments** | Using `: heartbeat` (SSE comment format) keeps heartbeats invisible to application handlers while preventing proxy/CDN timeouts |
-| **Fire-and-forget AAR** | After-action review runs on a daemon thread with its own DB session — diagnostics can never slow down or crash the user-facing response |
-| **Tier-based model selection** | Config uses abstract tiers ("fast"/"standard"/"advanced") not model IDs, making the entire system provider-agnostic |
+Every pattern in this repo exists because something broke, cost too much, or confused users in production.
+
+**[Read the full Design Decisions doc →](DESIGN_DECISIONS.md)** — 10 decisions with the failure that motivated each one, the fix, and the lesson learned.
+
+Highlights:
+
+| Decision | What Broke Without It |
+|----------|----------------------|
+| **Fresh DB session per tool call** | Tool A's failed query corrupted Tool B's results via shared ORM session |
+| **Budget awareness injection** | Agent burned $2-3 on simple questions; stopped too early on complex ones |
+| **USE WHEN / DO NOT USE annotations** | 20% tool mis-selection rate dropped to 8% |
+| **Data gap disclosure** | 35% hallucination rate in zero-result areas dropped to <3% |
+| **Composite tools** | Common deep-dives cost $0.75 in overhead; now $0.15 |
+| **Fire-and-forget AAR** | Slow diagnostics blocked user responses; crashes returned 500 errors |
+| **Context compaction** | 20-round conversations hit $1.20/turn in input tokens |
+
+---
+
+## Architecture Diagrams
+
+Visual walkthroughs of each subsystem: **[diagrams/system-architecture.md](diagrams/system-architecture.md)**
+
+- Full system overview (frontend → backend → data stores)
+- Agentic loop flow with all safety mechanisms
+- Tool dispatch pipeline (cache → session → execute → sanitize → CRAG)
+- Wave-based parallel generation
+- SSE event timeline (client ↔ server)
+- Infrastructure layout (7 Docker containers)
 
 ---
 
